@@ -1,0 +1,68 @@
+blueprint:
+  name: Motion Light
+  description: Turn a light on based on detected motion and light level
+  domain: automation
+  input:
+    motion_device:
+      name: Repeater
+      description: Which repeater should this automation control?
+      selector:
+        entity:
+          filter:
+            - device:
+    motion_entity:
+      name: Motion Entity
+      description: Pick the motion sensor of the repeater
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+            - device_class: motion
+    illuminance_entity:
+      name: Illuminance Entity
+      description: Pick the illuminance sensor of the repeater
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+triggers:
+  - type: motion
+    device_id: !input motion_device
+    entity_id: !input motion_entity
+    domain: binary_sensor
+    trigger: device
+  - type: illuminance
+    device_id: !input motion_device
+    entity_id: !input illuminance_entity
+    domain: sensor
+    trigger: device
+    below: 8
+conditions:
+  - type: is_illuminance
+    condition: device
+    device_id: !input motion_device
+    entity_id: !input illuminance_entity
+    domain: sensor
+    below: 8
+actions:
+  - action: light.turn_on
+    metadata: {}
+    data:
+      transition: 2
+      kelvin: 2000
+      brightness_pct: 100
+    target:
+      device_id: !input motion_device
+  - wait_for_trigger:
+      - type: no_motion
+        device_id: !input motion_device
+        entity_id: !input motion_entity
+        domain: binary_sensor
+        trigger: device
+    continue_on_timeout: true
+  - action: light.turn_off
+    metadata: {}
+    data:
+      transition: 5
+    target:
+      device_id: !input motion_device
